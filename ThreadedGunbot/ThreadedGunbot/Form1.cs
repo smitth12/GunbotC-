@@ -12,6 +12,7 @@ namespace ThreadedGunbot
 {
     public partial class Form1 : Form
     {
+        public static int offset = 22;
         // Constants for the event flags
         public const uint KEYEVENTF_KEYDOWN = 0x0000;
         public const uint KEYEVENTF_KEYUP = 0x0002;
@@ -122,43 +123,7 @@ namespace ThreadedGunbot
         // Function to simulate a left mouse click (button down and up)
         public void ClickLeftMouseButton()
         {
-            // Mouse down event
-            INPUT inputDown = new INPUT
-            {
-                type = 0, // Mouse input
-                u = new InputUnion
-                {
-                    mi = new MOUSEINPUT
-                    {
-                        dwFlags = MOUSEEVENTF_LEFTDOWN,
-                        time = 0,
-                        dwExtraInfo = IntPtr.Zero
-                    }
-                }
-            };
-
-            // Mouse up event
-            INPUT inputUp = new INPUT
-            {
-                type = 0, // Mouse input
-                u = new InputUnion
-                {
-                    mi = new MOUSEINPUT
-                    {
-                        dwFlags = MOUSEEVENTF_LEFTUP,
-                        time = 0,
-                        dwExtraInfo = IntPtr.Zero
-                    }
-                }
-            };
-            Thread.Sleep(2);
-            // Send the mouse down event
-            SendInput(1, ref inputDown, Marshal.SizeOf(typeof(INPUT)));
-
-            // Send the mouse up event
-            SendInput(1, ref inputUp, Marshal.SizeOf(typeof(INPUT)));
-
-
+            SendKeyPress(VK_X);
         }
 
 
@@ -235,49 +200,62 @@ namespace ThreadedGunbot
             Unknown
         }
 
-        // Globalizing pixel positions and expected colors as LoopPixels
-        private Point[] LoopPixels = new Point[]
-        {
+        private Point[] LoopPixelsNoOffset = new Point[]
+{
             new Point(35, 310), //Loop 0
             new Point(425, 310), //Loop1
             new Point(425, 380), //Loop 2
             new Point(35, 380), //Loop3
+};
+        private Point[] EntryPixelsNoOffset = new Point[]
+{
+            new Point(35, 250),
+            new Point(425, 250),
+            new Point(425, 440),
+            new Point(35, 440),
+};
+        private Point[] LoopPixels = new Point[]
+        {
+            new Point(35, 310+offset), //Loop 0
+            new Point(425-offset, 310), //Loop1
+            new Point(425, 380-offset), //Loop 2
+            new Point(35+offset, 380), //Loop3
         };
                 private Point[] EntryPixels = new Point[]
         {
-            new Point(35, 250), 
-            new Point(425, 250), 
-            new Point(425, 440), 
-            new Point(35, 440), 
+            new Point(35, 250+offset), 
+            new Point(425, 250+offset), 
+            new Point(425, 440-offset), 
+            new Point(35, 440-offset), 
         };
 
 
         private Point[] Cannon0Pixels = new Point[]
 {
-            new Point(135, 250),
-            new Point(105, 250),
-            new Point(75, 250),
+            new Point(135, 245),
+            new Point(105, 245),
+            new Point(79, 245),
 
 };
         private Point[] Cannon1Pixels = new Point[]
 {
-            new Point(325, 250),
-            new Point(355, 250),
-            new Point(385, 250),
+            new Point(325, 245),
+            new Point(355, 245),
+            new Point(375, 245),
 
 };
         private Point[] Cannon2Pixels = new Point[]
 {
-            new Point(325, 440),
-            new Point(355, 440),
-            new Point(385, 440),
+            new Point(325, 435),
+            new Point(355, 435),
+            new Point(375, 435),
 
 };
         private Point[] Cannon3Pixels = new Point[]
 {
-            new Point(135, 440),
-            new Point(105, 440),
-            new Point(75, 440),
+            new Point(135, 435),
+            new Point(105, 435),
+            new Point(79, 435),
 
 };
 
@@ -292,7 +270,7 @@ namespace ThreadedGunbot
             Color.FromArgb(179,179,217),   // Cloth
             Color.FromArgb(64,0,64),   // Ball
             Color.FromArgb(128,255,255), // Water
-            Color.FromArgb(234,0,0),//Filled0
+            Color.FromArgb(255,167,239),//Filled0
             Color.FromArgb(112,1,1),//Filled1
             Color.FromArgb(112,1,3),//Filled2
             Color.FromArgb(222,0,0),//Filled3
@@ -324,7 +302,7 @@ namespace ThreadedGunbot
             if (hWnd != IntPtr.Zero)
             {
                 captureScreenshots = true;
-                Task.Run(() => CaptureAndUpdateScreenshots());
+                //Task.Run(() => CaptureAndUpdateScreenshots());
                 Task.Run(() => LoopAnalyzer());
                 Task.Run(() => EntryAnalyzer());
                 Thread.Sleep(100);
@@ -504,7 +482,7 @@ namespace ThreadedGunbot
                         ColorType colorType = GetColorType(pixelColor);
 
                         // Log the pixel color for each position
-                        //Debug.WriteLine($"Cannon 0 - Position {i}: Pixel color: {pixelColor} (ColorType: {colorType})");
+                        Debug.WriteLine($"Cannon 0 - Position {i}: Pixel color: {pixelColor} (ColorType: {colorType})");
 
                         // Analyze the positions and track the need for the cannon overall
                         switch (i)
@@ -513,6 +491,10 @@ namespace ThreadedGunbot
                                 if (colorType == ColorType.Powder)
                                 {
                                     position0 = "Powder";
+                                }
+                                else if (colorType == ColorType.Filled0 || colorType == ColorType.Filled1 || colorType == ColorType.Filled2 || colorType == ColorType.Filled3)
+                                {
+                                    position2 = "Filled";  // Special case for Filled0
                                 }
                                 else if (colorType == ColorType.Cloth)
                                 {
@@ -537,6 +519,10 @@ namespace ThreadedGunbot
                                 {
                                     position1 = "Powder";
                                 }
+                                else if (colorType == ColorType.Filled0 || colorType == ColorType.Filled1 || colorType == ColorType.Filled2 || colorType == ColorType.Filled3)
+                                {
+                                    position2 = "Filled";  // Special case for Filled0
+                                }
                                 else if (colorType == ColorType.Cloth)
                                 {
                                     position1 = "Cloth";
@@ -556,14 +542,15 @@ namespace ThreadedGunbot
                                 {
                                     position2 = "Powder";
                                 }
+                                else if (colorType == ColorType.Filled0 || colorType == ColorType.Filled1 || colorType == ColorType.Filled2 || colorType == ColorType.Filled3)
+                                {
+                                    position2 = "Filled";  // Special case for Filled0
+                                }
                                 else if (colorType == ColorType.Cloth)
                                 {
                                     position2 = "Cloth";
                                 }
-                                else if (colorType == ColorType.Filled0)
-                                {
-                                    position2 = "Filled";  // Special case for Filled0
-                                }
+
                                 else
                                 {
                                     position2 = "Empty";
@@ -582,10 +569,11 @@ namespace ThreadedGunbot
                    // Debug.WriteLine($"position2: {position2}");
 
                     // Step 1: Check Position 2 first (highest priority)
-                    if (position2 == "Filled")
+                    if (position2 == "Filled" || position1 == "Filled" || position0 == "Filled")
                     {
                         overallNeed = "Filled";  // If Position 2 has Filled0, no need required
                     }
+
 
                     else
                     {
@@ -674,6 +662,10 @@ namespace ThreadedGunbot
                                 {
                                     position0 = "Powder";
                                 }
+                                else if (colorType == ColorType.Filled0 || colorType == ColorType.Filled1 || colorType == ColorType.Filled2 || colorType == ColorType.Filled3)
+                                {
+                                    position2 = "Filled";  // Special case for Filled0
+                                }
                                 else if (colorType == ColorType.Cloth)
                                 {
                                     position0 = "Cloth";
@@ -682,7 +674,7 @@ namespace ThreadedGunbot
                                 {
                                     position0 = "Ball";
                                 }
-                                else if (colorType == ColorType.Dirty1)
+                                else if (colorType == ColorType.Dirty0)
                                 {
                                     position0 = "Dirty";
                                 }
@@ -696,6 +688,10 @@ namespace ThreadedGunbot
                                 if (colorType == ColorType.Powder)
                                 {
                                     position1 = "Powder";
+                                }
+                                else if (colorType == ColorType.Filled0 || colorType == ColorType.Filled1 || colorType == ColorType.Filled2 || colorType == ColorType.Filled3)
+                                {
+                                    position2 = "Filled";  // Special case for Filled0
                                 }
                                 else if (colorType == ColorType.Cloth)
                                 {
@@ -720,7 +716,7 @@ namespace ThreadedGunbot
                                 {
                                     position2 = "Cloth";
                                 }
-                                else if (colorType == ColorType.Filled1)
+                                else if (colorType == ColorType.Filled0 || colorType == ColorType.Filled1 || colorType == ColorType.Filled2 || colorType == ColorType.Filled3)
                                 {
                                     position2 = "Filled";  // Special case for Filled0
                                 }
@@ -742,7 +738,7 @@ namespace ThreadedGunbot
                     //Debug.WriteLine($"position2: {position2}");
 
                     // Step 1: Check Position 2 first (highest priority)
-                    if (position2 == "Filled")
+                    if (position2 == "Filled" || position1 == "Filled" || position0 == "Filled")
                     {
                         overallNeed = "Filled";  // If Position 2 has Filled0, no need required
                     }
@@ -826,6 +822,10 @@ namespace ThreadedGunbot
                                 {
                                     position0 = "Powder";
                                 }
+                                else if (colorType == ColorType.Filled0 || colorType == ColorType.Filled1 || colorType == ColorType.Filled2 || colorType == ColorType.Filled3)
+                                {
+                                    position2 = "Filled";  // Special case for Filled0
+                                }
                                 else if (colorType == ColorType.Cloth)
                                 {
                                     position0 = "Cloth";
@@ -834,7 +834,7 @@ namespace ThreadedGunbot
                                 {
                                     position0 = "Ball";
                                 }
-                                else if (colorType == ColorType.Dirty2)
+                                else if (colorType == ColorType.Dirty0)
                                 {
                                     position0 = "Dirty";
                                 }
@@ -848,6 +848,10 @@ namespace ThreadedGunbot
                                 if (colorType == ColorType.Powder)
                                 {
                                     position1 = "Powder";
+                                }
+                                else if (colorType == ColorType.Filled0 || colorType == ColorType.Filled1 || colorType == ColorType.Filled2 || colorType == ColorType.Filled3)
+                                {
+                                    position2 = "Filled";  // Special case for Filled0
                                 }
                                 else if (colorType == ColorType.Cloth)
                                 {
@@ -872,7 +876,7 @@ namespace ThreadedGunbot
                                 {
                                     position2 = "Cloth";
                                 }
-                                else if (colorType == ColorType.Filled1)
+                                else if (colorType == ColorType.Filled0 || colorType == ColorType.Filled1 || colorType == ColorType.Filled2 || colorType == ColorType.Filled3)
                                 {
                                     position2 = "Filled";  // Special case for Filled0
                                 }
@@ -894,7 +898,7 @@ namespace ThreadedGunbot
                   // Debug.WriteLine($"position2: {position2}");
 
                     // Step 1: Check Position 2 first (highest priority)
-                    if (position2 == "Filled")
+                    if (position2 == "Filled" || position1 == "Filled" || position0 == "Filled")
                     {
                         overallNeed = "Filled";  // If Position 2 has Filled0, no need required
                     }
@@ -978,6 +982,10 @@ namespace ThreadedGunbot
                                 {
                                     position0 = "Powder";
                                 }
+                                else if (colorType == ColorType.Filled0 || colorType == ColorType.Filled1 || colorType == ColorType.Filled2 || colorType == ColorType.Filled3 )
+                                {
+                                    position2 = "Filled";  // Special case for Filled0
+                                }
                                 else if (colorType == ColorType.Cloth)
                                 {
                                     position0 = "Cloth";
@@ -986,7 +994,7 @@ namespace ThreadedGunbot
                                 {
                                     position0 = "Ball";
                                 }
-                                else if (colorType == ColorType.Dirty3)
+                                else if (colorType == ColorType.Dirty0)
                                 {
                                     position0 = "Dirty";
                                 }
@@ -1000,6 +1008,10 @@ namespace ThreadedGunbot
                                 if (colorType == ColorType.Powder)
                                 {
                                     position1 = "Powder";
+                                }
+                                else if (colorType == ColorType.Filled0 || colorType == ColorType.Filled1 || colorType == ColorType.Filled2 || colorType == ColorType.Filled3)
+                                {
+                                    position2 = "Filled";  // Special case for Filled0
                                 }
                                 else if (colorType == ColorType.Cloth)
                                 {
@@ -1024,7 +1036,7 @@ namespace ThreadedGunbot
                                 {
                                     position2 = "Cloth";
                                 }
-                                else if (colorType == ColorType.Filled3)
+                                else if (colorType == ColorType.Filled0 || colorType == ColorType.Filled1 || colorType == ColorType.Filled2 || colorType == ColorType.Filled3)
                                 {
                                     position2 = "Filled";  // Special case for Filled0
                                 }
@@ -1046,7 +1058,7 @@ namespace ThreadedGunbot
                    // Debug.WriteLine($"position2: {position2}");
 
                     // Step 1: Check Position 2 first (highest priority)
-                    if (position2 == "Filled")
+                    if (position2 == "Filled" || position1 == "Filled" || position0 == "Filled")
                     {
                         overallNeed = "Filled";  // If Position 2 has Filled0, no need required
                     }
@@ -1219,6 +1231,10 @@ namespace ThreadedGunbot
                         {
                             PerformCannon0Action(ColorType.Ball); // Perform Cannon 0's specific action
                         }
+                        else if (i == 0 && need == "Cloth" && loopColorType == ColorType.Cloth)
+                        {
+                            PerformCannon0Action(ColorType.Cloth); // Perform Cannon 0's specific action
+                        }
                         else if (i == 0 && need == "Water" && loopColorType == ColorType.Water)
                         {
                             PerformCannon0Action(ColorType.Water); // Perform Cannon 0's specific action
@@ -1232,6 +1248,10 @@ namespace ThreadedGunbot
                         else if (i == 1 && need == "Ball" && loopColorType == ColorType.Ball)
                         {
                             PerformCannon1Action(ColorType.Ball); // Perform Cannon 1's specific action
+                        }
+                        else if (i == 1 && need == "Cloth" && loopColorType == ColorType.Cloth)
+                        {
+                            PerformCannon1Action(ColorType.Cloth); // Perform Cannon 0's specific action
                         }
                         else if (i == 1 && need == "Water" && loopColorType == ColorType.Water)
                         {
@@ -1247,6 +1267,10 @@ namespace ThreadedGunbot
                         {
                             PerformCannon2Action(ColorType.Ball); // Perform Cannon 2's specific action
                         }
+                        else if (i == 2 && need == "Cloth" && loopColorType == ColorType.Cloth)
+                        {
+                            PerformCannon2Action(ColorType.Cloth); // Perform Cannon 0's specific action
+                        }
                         else if (i == 2 && need == "Water" && loopColorType == ColorType.Water)
                         {
                             PerformCannon2Action(ColorType.Water); // Perform Cannon 2's specific action
@@ -1260,6 +1284,10 @@ namespace ThreadedGunbot
                         else if (i == 3 && need == "Ball" && loopColorType == ColorType.Ball)
                         {
                             PerformCannon3Action(ColorType.Ball); // Perform Cannon 3's specific action
+                        }
+                        else if (i == 3 && need == "Cloth" && loopColorType == ColorType.Cloth)
+                        {
+                            PerformCannon3Action(ColorType.Cloth); // Perform Cannon 0's specific action
                         }
                         else if (i == 3 && need == "Water" && loopColorType == ColorType.Water)
                         {
@@ -1289,45 +1317,60 @@ namespace ThreadedGunbot
         private async void PerformCannon0Action(ColorType desiredColor)
         {
             // Step 1: Perform initial actions (move mouse, press keys)
-            MoveMouseToWindowWithOffset(hWnd, LoopPixels[0].X, LoopPixels[0].Y);
+            MoveMouseToWindowWithOffset(hWnd, LoopPixelsNoOffset[0].X, LoopPixelsNoOffset[0].Y);
             SendKeyPress(VK_W);
             ClickLeftMouseButton();
-            SendKeyPress(VK_S);
+            Thread.Sleep(45);
+            SendKeyPress(VK_D);
             ClickLeftMouseButton();
 
-            MoveMouseToWindowWithOffset(hWnd, EntryPixels[0].X, EntryPixels[0].Y);
+            MoveMouseToWindowWithOffset(hWnd, EntryPixelsNoOffset[0].X, EntryPixelsNoOffset[0].Y);
             SendKeyPress(VK_D);
+            ClickLeftMouseButton();
+            Thread.Sleep(60);
+            SendKeyPress(VK_A);
 
-
-            bool colorMatched = await WaitForDesiredColorAsync(desiredColor, 200);
+            bool colorMatched = await WaitForDesiredColorAsync(desiredColor, 300);
             if (colorMatched)
             {
+                Thread.Sleep(60);
                 ClickLeftMouseButton(); // Example of action when color is found
             }
+
+            ClickLeftMouseButton();
+            MoveMouseToWindowWithOffset(hWnd, LoopPixelsNoOffset[2].X - 190, LoopPixelsNoOffset[2].Y);
             SendKeyPress(VK_A);
-            SendKeyPress(VK_X);
+            ClickLeftMouseButton();
             FixLoop();
         }
 
         private async void PerformCannon1Action(ColorType desiredColor)
         {
             // Step 1: Perform initial actions (move mouse, press keys)
-            MoveMouseToWindowWithOffset(hWnd, LoopPixels[1].X, LoopPixels[1].Y);
+            MoveMouseToWindowWithOffset(hWnd, LoopPixelsNoOffset[1].X, LoopPixelsNoOffset[1].Y);
             SendKeyPress(VK_W);
             ClickLeftMouseButton();
+            Thread.Sleep(50);
             SendKeyPress(VK_S);
             ClickLeftMouseButton();
             FixLoop();
-            MoveMouseToWindowWithOffset(hWnd, EntryPixels[1].X, EntryPixels[1].Y);
+            MoveMouseToWindowWithOffset(hWnd, EntryPixelsNoOffset[1].X, EntryPixelsNoOffset[1].Y);
             SendKeyPress(VK_A);
+            ClickLeftMouseButton();
+            Thread.Sleep(35);
+            SendKeyPress(VK_D);
+            
 
 
-            bool colorMatched = await WaitForDesiredColorAsync(desiredColor, 200);
+            bool colorMatched = await WaitForDesiredColorAsync(desiredColor,300);
             if (colorMatched)
             {
+                Thread.Sleep(50);
                 ClickLeftMouseButton(); // Example of action when color is found
             }
-            SendKeyPress(VK_D);
+            ClickLeftMouseButton();
+            MoveMouseToWindowWithOffset(hWnd, LoopPixelsNoOffset[2].X - 190, LoopPixelsNoOffset[2].Y);
+            SendKeyPress(VK_A);
             ClickLeftMouseButton();
             FixLoop();
         }
@@ -1335,22 +1378,30 @@ namespace ThreadedGunbot
         private async void PerformCannon2Action(ColorType desiredColor)
         {
             // Step 1: Perform initial actions (move mouse, press keys)
-            MoveMouseToWindowWithOffset(hWnd, LoopPixels[2].X, LoopPixels[2].Y);
+            MoveMouseToWindowWithOffset(hWnd, LoopPixelsNoOffset[2].X, LoopPixelsNoOffset[2].Y);
             SendKeyPress(VK_S);
             ClickLeftMouseButton();
-            SendKeyPress(VK_W);
+            Thread.Sleep(45);
+            SendKeyPress(VK_A);
             SendKeyPress(VK_X);
             FixLoop();
-            MoveMouseToWindowWithOffset(hWnd, EntryPixels[2].X, EntryPixels[2].Y);
+            MoveMouseToWindowWithOffset(hWnd, EntryPixelsNoOffset[2].X, EntryPixelsNoOffset[2].Y);
             SendKeyPress(VK_A);
+            //Thread.Sleep(35);
+            ClickLeftMouseButton();
+            SendKeyPress(VK_D);
 
 
-            bool colorMatched = await WaitForDesiredColorAsync(desiredColor, 200);
+
+            bool colorMatched = await WaitForDesiredColorAsync(desiredColor, 300);
             if (colorMatched)
             {
-                ClickLeftMouseButton();
+                Thread.Sleep(40);
+                ClickLeftMouseButton(); // Example of action when color is found
             }
-            SendKeyPress(VK_D);
+            ClickLeftMouseButton();
+            MoveMouseToWindowWithOffset(hWnd, LoopPixelsNoOffset[2].X - 190, LoopPixelsNoOffset[2].Y);
+            SendKeyPress(VK_A);
             ClickLeftMouseButton();
             FixLoop();
         }
@@ -1358,21 +1409,28 @@ namespace ThreadedGunbot
         private async void PerformCannon3Action(ColorType desiredColor)
         {
             // Step 1: Perform initial actions (move mouse, press keys)
-            MoveMouseToWindowWithOffset(hWnd, LoopPixels[3].X, LoopPixels[3].Y);
+            MoveMouseToWindowWithOffset(hWnd, LoopPixelsNoOffset[3].X, LoopPixelsNoOffset[3].Y);
             SendKeyPress(VK_S);
             ClickLeftMouseButton();
+            Thread.Sleep(45);
             SendKeyPress(VK_W);
             ClickLeftMouseButton();
             FixLoop();
-            MoveMouseToWindowWithOffset(hWnd, EntryPixels[3].X, EntryPixels[3].Y);
+            MoveMouseToWindowWithOffset(hWnd, EntryPixelsNoOffset[3].X, EntryPixelsNoOffset[3].Y);
             SendKeyPress(VK_D);
+            //Thread.Sleep(35);
+            ClickLeftMouseButton();
+            SendKeyPress(VK_A);
+            
 
-
-            bool colorMatched = await WaitForDesiredColorAsync(desiredColor, 200);
+            bool colorMatched = await WaitForDesiredColorAsync(desiredColor, 300);
             if (colorMatched)
             {
-                ClickLeftMouseButton();
+                Thread.Sleep(40);
+                ClickLeftMouseButton(); // Example of action when color is found
             }
+            ClickLeftMouseButton();
+            MoveMouseToWindowWithOffset(hWnd, LoopPixelsNoOffset[2].X - 190, LoopPixelsNoOffset[2].Y);
             SendKeyPress(VK_A);
             ClickLeftMouseButton();
             FixLoop();
@@ -1380,10 +1438,10 @@ namespace ThreadedGunbot
 
         private void FixLoop()
         {
-            MoveMouseToWindowWithOffset(hWnd, LoopPixels[0].X, LoopPixels[0].Y);
+            MoveMouseToWindowWithOffset(hWnd, LoopPixelsNoOffset[0].X, LoopPixelsNoOffset[0].Y);
             SendKeyPress(VK_D);
             ClickLeftMouseButton();
-            MoveMouseToWindowWithOffset(hWnd, LoopPixels[2].X, LoopPixels[2].Y);
+            MoveMouseToWindowWithOffset(hWnd, LoopPixelsNoOffset[2].X, LoopPixelsNoOffset[2].Y);
             SendKeyPress(VK_A);
             ClickLeftMouseButton();
         }
