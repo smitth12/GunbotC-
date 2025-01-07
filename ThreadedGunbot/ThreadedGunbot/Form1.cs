@@ -6,17 +6,175 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Diagnostics;
 using System.Collections.Concurrent;
+using System.Threading;
 
 namespace ThreadedGunbot
 {
     public partial class Form1 : Form
     {
+        // Constants for the event flags
+        public const uint KEYEVENTF_KEYDOWN = 0x0000;
+        public const uint KEYEVENTF_KEYUP = 0x0002;
+
+        public const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
+        public const uint MOUSEEVENTF_LEFTUP = 0x0004;
+
+        // Virtual key codes for A, D, S, W, X
+        public const ushort VK_A = 0x41;
+        public const ushort VK_D = 0x44;
+        public const ushort VK_S = 0x53;
+        public const ushort VK_W = 0x57;
+        public const ushort VK_X = 0x58;
+
+        // Import SendInput from user32.dll
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        public static extern uint SendInput(uint nInputs, ref INPUT pInputs, int cbSize);
+
+        // Define the structures needed for SendInput
+        [StructLayout(LayoutKind.Sequential)]
+        public struct INPUT
+        {
+            public uint type;
+            public InputUnion u;
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        public struct InputUnion
+        {
+            [FieldOffset(0)] public MOUSEINPUT mi;
+            [FieldOffset(0)] public KEYBDINPUT ki;
+            [FieldOffset(0)] public HARDWAREINPUT hi;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MOUSEINPUT
+        {
+            public int dx;
+            public int dy;
+            public uint mouseData;
+            public uint dwFlags;
+            public uint time;
+            public IntPtr dwExtraInfo;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct KEYBDINPUT
+        {
+            public ushort wVk;
+            public ushort wScan;
+            public uint dwFlags;
+            public uint time;
+            public IntPtr dwExtraInfo;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct HARDWAREINPUT
+        {
+            public uint uMsg;
+            public ushort wParamL;
+            public ushort wParamH;
+        }
+
+        // Function to simulate a key press and release
+        public void SendKeyPress(ushort keyCode)
+        {
+            INPUT inputDown = new INPUT
+            {
+                type = 1, // Keyboard input
+                u = new InputUnion
+                {
+                    ki = new KEYBDINPUT
+                    {
+                        wVk = keyCode,
+                        wScan = 0,
+                        dwFlags = KEYEVENTF_KEYDOWN,
+                        time = 0,
+                        dwExtraInfo = IntPtr.Zero
+                    }
+                }
+            };
+
+            INPUT inputUp = new INPUT
+            {
+                type = 1, // Keyboard input
+                u = new InputUnion
+                {
+                    ki = new KEYBDINPUT
+                    {
+                        wVk = keyCode,
+                        wScan = 0,
+                        dwFlags = KEYEVENTF_KEYUP,
+                        time = 0,
+                        dwExtraInfo = IntPtr.Zero
+                    }
+                }
+            };
+
+            // Send the key down event
+            SendInput(1, ref inputDown, Marshal.SizeOf(typeof(INPUT)));
+
+            // Send the key up event
+            SendInput(1, ref inputUp, Marshal.SizeOf(typeof(INPUT)));
+            Thread.Sleep(1);
+
+        }
+
+        // Function to simulate a left mouse click (button down and up)
+        public void ClickLeftMouseButton()
+        {
+            // Mouse down event
+            INPUT inputDown = new INPUT
+            {
+                type = 0, // Mouse input
+                u = new InputUnion
+                {
+                    mi = new MOUSEINPUT
+                    {
+                        dwFlags = MOUSEEVENTF_LEFTDOWN,
+                        time = 0,
+                        dwExtraInfo = IntPtr.Zero
+                    }
+                }
+            };
+
+            // Mouse up event
+            INPUT inputUp = new INPUT
+            {
+                type = 0, // Mouse input
+                u = new InputUnion
+                {
+                    mi = new MOUSEINPUT
+                    {
+                        dwFlags = MOUSEEVENTF_LEFTUP,
+                        time = 0,
+                        dwExtraInfo = IntPtr.Zero
+                    }
+                }
+            };
+            Thread.Sleep(2);
+            // Send the mouse down event
+            SendInput(1, ref inputDown, Marshal.SizeOf(typeof(INPUT)));
+
+            // Send the mouse up event
+            SendInput(1, ref inputUp, Marshal.SizeOf(typeof(INPUT)));
+
+
+        }
+
+
+    
+
+
+
+
+
         private ConcurrentDictionary<int, string> cannonNeeds = new ConcurrentDictionary<int, string>();
 
 
         private ConcurrentDictionary<int, string> cannonData = new ConcurrentDictionary<int, string>();
 
-
+        private ConcurrentDictionary<int, ColorType> loopColors = new ConcurrentDictionary<int, ColorType>();
+        private ConcurrentDictionary<int, ColorType> entryColors = new ConcurrentDictionary<int, ColorType>(); 
 
         private ScreenshotCapture screenshotCapture;
         private IntPtr hWnd;
@@ -35,7 +193,7 @@ namespace ThreadedGunbot
         [DllImport("user32.dll")]
         public static extern int GetWindowRect(IntPtr hWnd, ref RECT lpRect);
 
-        // Declare necessary structs
+        // Define the RECT structure to hold window position
         public struct RECT
         {
             public int Left;
@@ -43,7 +201,19 @@ namespace ThreadedGunbot
             public int Right;
             public int Bottom;
         }
+        [DllImport("user32.dll")]
+        public static extern bool SetCursorPos(int x, int y);
 
+        // Method to retrieve window coordinates
+        public Point GetWindowPosition(IntPtr hWnd)
+        {
+            RECT windowRect = new RECT();
+            // Call GetWindowRect to get the position of the window
+            GetWindowRect(hWnd, ref windowRect);
+
+            // The window's position is represented by the top-left corner of the window (Left, Top)
+            return new Point(windowRect.Left, windowRect.Top);
+        }
         // Define delegate for EnumWindows function
         public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
@@ -154,7 +324,6 @@ namespace ThreadedGunbot
             if (hWnd != IntPtr.Zero)
             {
                 captureScreenshots = true;
-                // Start the background task to capture screenshots and analyze pixels
                 Task.Run(() => CaptureAndUpdateScreenshots());
                 Task.Run(() => LoopAnalyzer());
                 Task.Run(() => EntryAnalyzer());
@@ -247,43 +416,23 @@ namespace ThreadedGunbot
 
                 if (screenshot != null)
                 {
-                    // Check each pixel and log the corresponding color type for positions 0, 1, 2, 3
+                    // Check each pixel and store the corresponding color type for positions 0, 1, 2, 3
                     for (int i = 0; i < LoopPixels.Length; i++)
                     {
                         Color pixelColor = screenshot.GetPixel(LoopPixels[i].X, LoopPixels[i].Y);
 
-                        // Log the current pixel color
-                        
-                        //Debug.WriteLine($"Pixel at position {i} (coordinates {LoopPixels[i]}) has color: {pixelColor}");
-
                         // Determine the color type for the current pixel position
                         ColorType colorType = GetColorType(pixelColor);
 
-                        // Check if it matches any of the expected color types
-                        switch (colorType)
-                        {
-                            case ColorType.Powder:
-                                //Debug.WriteLine($"Loop {i}: Powder");
-                                break;
-                            case ColorType.Cloth:
-                                //Debug.WriteLine($"Loop {i}: Cloth");
-                                break;
-                            case ColorType.Ball:
-                                //Debug.WriteLine($"Loop {i}: Ball");
-                                break;
-                            case ColorType.Water:
-                                //Debug.WriteLine($"Loop {i}: Water");
-                                break;
-                            default:
-                                //Debug.WriteLine($"Pixel at position {i} (coordinates {LoopPixels[i]}) does NOT match any expected color.");
-                                break;
-                        }
+                        // Store the result in the global dictionary
+                        loopColors[i] = colorType;
+
+                        // Log the current pixel color for debugging
+                        //Debug.WriteLine($"Loop {i} at {LoopPixels[i]}: Pixel color: {pixelColor} (ColorType: {colorType})");
                     }
-                    //Debug.WriteLine("-----------------------------");
-                    // Explicitly dispose of the screenshot after use
+
                     screenshot.Dispose();
                 }
-
             }
         }
         private void EntryAnalyzer()
@@ -295,36 +444,39 @@ namespace ThreadedGunbot
 
                 if (screenshot != null)
                 {
-                    // Check each pixel and log the corresponding color type for positions 0, 1, 2, 3
+                    // Check each pixel and store the corresponding color type for positions 0, 1, 2, 3
                     for (int i = 0; i < EntryPixels.Length; i++)
                     {
                         Color pixelColor = screenshot.GetPixel(EntryPixels[i].X, EntryPixels[i].Y);
                         ColorType colorType = GetColorType(pixelColor);
 
+                        // Store the color type in the entryColors dictionary
+                        entryColors[i] = colorType;
+
+                        // Optionally, log the color type for debugging
                         switch (colorType)
                         {
                             case ColorType.Powder:
-                                Debug.WriteLine($"Entry {i}: Powder");
+                                //Debug.WriteLine($"Entry {i}: Powder");
                                 break;
                             case ColorType.Cloth:
-                                Debug.WriteLine($"Entry {i}: Cloth");
+                                //Debug.WriteLine($"Entry {i}: Cloth");
                                 break;
                             case ColorType.Ball:
-                                Debug.WriteLine($"Entry {i}: Ball");
+                                //Debug.WriteLine($"Entry {i}: Ball");
                                 break;
                             case ColorType.Water:
-                                Debug.WriteLine($"Entry {i}: Water");
+                                //Debug.WriteLine($"Entry {i}: Water");
                                 break;
                             default:
-                                //Debug.WriteLine($"Pixel at position {i} (coordinates {LoopPixels[i]}) does NOT match any expected color.");
+                                //Debug.WriteLine($"Entry {i}: Unknown color");
                                 break;
                         }
                     }
-                    //Debug.WriteLine("-----------------------------");
-                    // Explicitly dispose of the screenshot after use
+
+                    // Dispose of the screenshot after use
                     screenshot.Dispose();
                 }
-
             }
         }
 
@@ -1051,19 +1203,77 @@ namespace ThreadedGunbot
                 {
                     Debug.WriteLine($"Cannon {i}: Needs {need}");
 
-                    // Optionally, you can add more complex logic here depending on other conditions.
-                    // For example, if you want to check for specific conditions:
-                    if (need == "Powder")
+                    // Get the loop color for the respective cannon from the loopColors dictionary
+                    ColorType loopColorType;
+                    if (loopColors.TryGetValue(i, out loopColorType))
                     {
+                        Debug.WriteLine($"Cannon {i} - Loop {i} (ColorType: {loopColorType})");
+
+                        // Now perform actions based on the cannon need and the color of the respective loop position
+                        // Cannon 0 actions
+                        if (i == 0 && need == "Powder" && loopColorType == ColorType.Powder)
+                        {
+                            PerformCannon0Action(ColorType.Powder); // Perform Cannon 0's specific action
+                        }
+                        else if (i == 0 && need == "Ball" && loopColorType == ColorType.Ball)
+                        {
+                            PerformCannon0Action(ColorType.Ball); // Perform Cannon 0's specific action
+                        }
+                        else if (i == 0 && need == "Water" && loopColorType == ColorType.Water)
+                        {
+                            PerformCannon0Action(ColorType.Water); // Perform Cannon 0's specific action
+                        }
+
+                        // Cannon 1 actions
+                        else if (i == 1 && need == "Powder" && loopColorType == ColorType.Powder)
+                        {
+                            PerformCannon1Action(ColorType.Powder); // Perform Cannon 1's specific action
+                        }
+                        else if (i == 1 && need == "Ball" && loopColorType == ColorType.Ball)
+                        {
+                            PerformCannon1Action(ColorType.Ball); // Perform Cannon 1's specific action
+                        }
+                        else if (i == 1 && need == "Water" && loopColorType == ColorType.Water)
+                        {
+                            PerformCannon1Action(ColorType.Water); // Perform Cannon 1's specific action
+                        }
+
+                        // Cannon 2 actions
+                        else if (i == 2 && need == "Powder" && loopColorType == ColorType.Powder)
+                        {
+                            PerformCannon2Action(ColorType.Powder); // Perform Cannon 2's specific action
+                        }
+                        else if (i == 2 && need == "Ball" && loopColorType == ColorType.Ball)
+                        {
+                            PerformCannon2Action(ColorType.Ball); // Perform Cannon 2's specific action
+                        }
+                        else if (i == 2 && need == "Water" && loopColorType == ColorType.Water)
+                        {
+                            PerformCannon2Action(ColorType.Water); // Perform Cannon 2's specific action
+                        }
+
+                        // Cannon 3 actions
+                        else if (i == 3 && need == "Powder" && loopColorType == ColorType.Powder)
+                        {
+                            PerformCannon3Action(ColorType.Powder); // Perform Cannon 3's specific action
+                        }
+                        else if (i == 3 && need == "Ball" && loopColorType == ColorType.Ball)
+                        {
+                            PerformCannon3Action(ColorType.Ball); // Perform Cannon 3's specific action
+                        }
+                        else if (i == 3 && need == "Water" && loopColorType == ColorType.Water)
+                        {
+                            PerformCannon3Action(ColorType.Water); // Perform Cannon 3's specific action
+                        }
+
+                        else
+                        {
+                            Debug.WriteLine($"Cannon {i}: Condition not met, no action performed.");
+                        }
                     }
-                    else if (need == "Cloth")
+                    else
                     {
-                    }
-                    else if (need == "Ball")
-                    {
-                    }
-                    else if (need == "Water")
-                    {
+                        Debug.WriteLine($"Cannon {i}: Loop color data not available.");
                     }
                 }
                 else
@@ -1074,5 +1284,140 @@ namespace ThreadedGunbot
         }
 
 
+
+
+        private async void PerformCannon0Action(ColorType desiredColor)
+        {
+            // Step 1: Perform initial actions (move mouse, press keys)
+            MoveMouseToWindowWithOffset(hWnd, LoopPixels[0].X, LoopPixels[0].Y);
+            SendKeyPress(VK_W);
+            ClickLeftMouseButton();
+            SendKeyPress(VK_S);
+            ClickLeftMouseButton();
+
+            MoveMouseToWindowWithOffset(hWnd, EntryPixels[0].X, EntryPixels[0].Y);
+            SendKeyPress(VK_D);
+
+
+            bool colorMatched = await WaitForDesiredColorAsync(desiredColor, 200);
+            if (colorMatched)
+            {
+                ClickLeftMouseButton(); // Example of action when color is found
+            }
+            SendKeyPress(VK_A);
+            SendKeyPress(VK_X);
+            FixLoop();
+        }
+
+        private async void PerformCannon1Action(ColorType desiredColor)
+        {
+            // Step 1: Perform initial actions (move mouse, press keys)
+            MoveMouseToWindowWithOffset(hWnd, LoopPixels[1].X, LoopPixels[1].Y);
+            SendKeyPress(VK_W);
+            ClickLeftMouseButton();
+            SendKeyPress(VK_S);
+            ClickLeftMouseButton();
+            FixLoop();
+            MoveMouseToWindowWithOffset(hWnd, EntryPixels[1].X, EntryPixels[1].Y);
+            SendKeyPress(VK_A);
+
+
+            bool colorMatched = await WaitForDesiredColorAsync(desiredColor, 200);
+            if (colorMatched)
+            {
+                ClickLeftMouseButton(); // Example of action when color is found
+            }
+            SendKeyPress(VK_D);
+            ClickLeftMouseButton();
+            FixLoop();
+        }
+
+        private async void PerformCannon2Action(ColorType desiredColor)
+        {
+            // Step 1: Perform initial actions (move mouse, press keys)
+            MoveMouseToWindowWithOffset(hWnd, LoopPixels[2].X, LoopPixels[2].Y);
+            SendKeyPress(VK_S);
+            ClickLeftMouseButton();
+            SendKeyPress(VK_W);
+            SendKeyPress(VK_X);
+            FixLoop();
+            MoveMouseToWindowWithOffset(hWnd, EntryPixels[2].X, EntryPixels[2].Y);
+            SendKeyPress(VK_A);
+
+
+            bool colorMatched = await WaitForDesiredColorAsync(desiredColor, 200);
+            if (colorMatched)
+            {
+                ClickLeftMouseButton();
+            }
+            SendKeyPress(VK_D);
+            ClickLeftMouseButton();
+            FixLoop();
+        }
+
+        private async void PerformCannon3Action(ColorType desiredColor)
+        {
+            // Step 1: Perform initial actions (move mouse, press keys)
+            MoveMouseToWindowWithOffset(hWnd, LoopPixels[3].X, LoopPixels[3].Y);
+            SendKeyPress(VK_S);
+            ClickLeftMouseButton();
+            SendKeyPress(VK_W);
+            ClickLeftMouseButton();
+            FixLoop();
+            MoveMouseToWindowWithOffset(hWnd, EntryPixels[3].X, EntryPixels[3].Y);
+            SendKeyPress(VK_D);
+
+
+            bool colorMatched = await WaitForDesiredColorAsync(desiredColor, 200);
+            if (colorMatched)
+            {
+                ClickLeftMouseButton();
+            }
+            SendKeyPress(VK_A);
+            ClickLeftMouseButton();
+            FixLoop();
+        }
+
+        private void FixLoop()
+        {
+            MoveMouseToWindowWithOffset(hWnd, LoopPixels[0].X, LoopPixels[0].Y);
+            SendKeyPress(VK_D);
+            ClickLeftMouseButton();
+            MoveMouseToWindowWithOffset(hWnd, LoopPixels[2].X, LoopPixels[2].Y);
+            SendKeyPress(VK_A);
+            ClickLeftMouseButton();
+        }
+
+        private async Task<bool> WaitForDesiredColorAsync(ColorType desiredColor, int timeoutMs)
+        {
+            DateTime startTime = DateTime.Now;
+
+            // Poll every 10ms to check if the desired color is found within the timeout
+            while ((DateTime.Now - startTime).TotalMilliseconds < timeoutMs)
+            {
+                // Check if the color of EntryPixels[0] matches the desired color
+                if (entryColors.TryGetValue(0, out ColorType currentColor) && currentColor == desiredColor)
+                {
+                    return true; // Desired color matched
+                }
+            }
+
+            return false; // Desired color not found within the timeout
+        }
+
+        // You can use this method to move the mouse
+        public void MoveMouseToWindowWithOffset(IntPtr hWnd, int offsetX, int offsetY)
+        {
+            // Get the window position
+            Point windowPos = GetWindowPosition(hWnd);
+
+            // Apply the offset
+            int targetX = windowPos.X + offsetX;
+            int targetY = windowPos.Y + offsetY;
+
+            // Move the mouse to the desired position
+            SetCursorPos(targetX, targetY); // SetCursorPos sets the mouse position on the screen
+            Thread.Sleep(1);
+        }
     }
 }

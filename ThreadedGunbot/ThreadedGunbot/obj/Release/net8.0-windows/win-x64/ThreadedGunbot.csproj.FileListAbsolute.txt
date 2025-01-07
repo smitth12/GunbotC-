@@ -1,0 +1,16 @@
+C:\Users\linus\source\repos\ThreadedGunbot\ThreadedGunbot\bin\Release\net8.0-windows\win-x64\ThreadedGunbot.exe
+C:\Users\linus\source\repos\ThreadedGunbot\ThreadedGunbot\bin\Release\net8.0-windows\win-x64\ThreadedGunbot.deps.json
+C:\Users\linus\source\repos\ThreadedGunbot\ThreadedGunbot\bin\Release\net8.0-windows\win-x64\ThreadedGunbot.runtimeconfig.json
+C:\Users\linus\source\repos\ThreadedGunbot\ThreadedGunbot\bin\Release\net8.0-windows\win-x64\ThreadedGunbot.dll
+C:\Users\linus\source\repos\ThreadedGunbot\ThreadedGunbot\bin\Release\net8.0-windows\win-x64\ThreadedGunbot.pdb
+C:\Users\linus\source\repos\ThreadedGunbot\ThreadedGunbot\obj\Release\net8.0-windows\win-x64\ThreadedGunbot.Form1.resources
+C:\Users\linus\source\repos\ThreadedGunbot\ThreadedGunbot\obj\Release\net8.0-windows\win-x64\ThreadedGunbot.csproj.GenerateResource.cache
+C:\Users\linus\source\repos\ThreadedGunbot\ThreadedGunbot\obj\Release\net8.0-windows\win-x64\ThreadedGunbot.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\linus\source\repos\ThreadedGunbot\ThreadedGunbot\obj\Release\net8.0-windows\win-x64\ThreadedGunbot.AssemblyInfoInputs.cache
+C:\Users\linus\source\repos\ThreadedGunbot\ThreadedGunbot\obj\Release\net8.0-windows\win-x64\ThreadedGunbot.AssemblyInfo.cs
+C:\Users\linus\source\repos\ThreadedGunbot\ThreadedGunbot\obj\Release\net8.0-windows\win-x64\ThreadedGunbot.csproj.CoreCompileInputs.cache
+C:\Users\linus\source\repos\ThreadedGunbot\ThreadedGunbot\obj\Release\net8.0-windows\win-x64\ThreadedGunbot.dll
+C:\Users\linus\source\repos\ThreadedGunbot\ThreadedGunbot\obj\Release\net8.0-windows\win-x64\refint\ThreadedGunbot.dll
+C:\Users\linus\source\repos\ThreadedGunbot\ThreadedGunbot\obj\Release\net8.0-windows\win-x64\ThreadedGunbot.pdb
+C:\Users\linus\source\repos\ThreadedGunbot\ThreadedGunbot\obj\Release\net8.0-windows\win-x64\ThreadedGunbot.genruntimeconfig.cache
+C:\Users\linus\source\repos\ThreadedGunbot\ThreadedGunbot\obj\Release\net8.0-windows\win-x64\ref\ThreadedGunbot.dll

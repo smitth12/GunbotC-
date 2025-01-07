@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "g4WYsSAuHxE=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\linus\\source\\repos\\ThreadedGunbot\\ThreadedGunbot\\ThreadedGunbot.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\linus\\.nuget\\packages\\microsoft.net.illink.tasks\\8.0.8\\microsoft.net.illink.tasks.8.0.8.nupkg.sha512"
+  ],
+  "logs": []
+}

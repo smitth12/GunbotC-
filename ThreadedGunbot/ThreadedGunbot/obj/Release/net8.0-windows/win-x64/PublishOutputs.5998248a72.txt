@@ -1,0 +1,2 @@
+C:\Users\linus\source\repos\ThreadedGunbot\ThreadedGunbot\bin\Release\net8.0-windows\publish\win-x64\ThreadedGunbot.pdb
+C:\Users\linus\source\repos\ThreadedGunbot\ThreadedGunbot\bin\Release\net8.0-windows\publish\win-x64\ThreadedGunbot.exe
